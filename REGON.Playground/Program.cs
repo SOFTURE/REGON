@@ -6,7 +6,7 @@ namespace REGON.Playground
 {
     public abstract class Program
     {
-        private const string GusKey = "b74d739805a34c7d837d";
+        private const string GusKey = "<GUS-API-KEY>";
         
         private static async Task Main(string[] args)
         {
@@ -25,6 +25,12 @@ namespace REGON.Playground
             var nipResponse = await client.GetCompanyDataByNip(exampleNip);
 
             Console.WriteLine(nipResponse.Name);
+
+            const string exampleRegon = "387967759";
+            
+            var regonResponse = await client.GetCompanyDataByRegon(exampleRegon);
+            
+            Console.WriteLine(regonResponse.Name);
             
             Console.WriteLine("REGON PLAYGROUND - END");
         }

@@ -72,7 +72,7 @@ namespace REGON.Client
             return resultObject;
         }
 
-        // TYP: F - jdg, P - spzoo, LF - ?, LP - ?
+        // TYPE: F - sole proprietorship, P - company, LF - ?, LP - ?
         public async Task<SzukajPodmioty> SzukajPodmiotuByNip(string nip)
         {
             var regon = await PrepareClient();
@@ -92,7 +92,7 @@ namespace REGON.Client
             return result;
         }
 
-        // TYP: F - jdg, P - spzoo, LF - ?, LP - ?
+        // TYPE: F - sole proprietorship, P - company, LF - ?, LP - ?
         public async Task<SzukajPodmioty> SzukajPodmiotuByKrs(string krs)
         {
             var regon = await PrepareClient();
@@ -112,7 +112,27 @@ namespace REGON.Client
             return result;
         }
 
-        // Spółki
+        // TYPE: F - sole proprietorship, P - company, LF - ?, LP - ?
+        public async Task<SzukajPodmioty> SzukajPodmiotuByRegon(string regon)
+        {
+            var regonClient = await PrepareClient();
+
+            var parametry = new ParametryWyszukiwania
+            {
+                Regon = regon,
+            };
+
+            var response = await regonClient.Client.DaneSzukajPodmiotyAsync(parametry);
+
+            await regonClient.Client.WylogujAsync(regonClient.Sid);
+            regonClient.Client.Close();
+
+            var result = ConvertXml<SzukajPodmioty>(response.DaneSzukajPodmiotyResult.ToString());
+
+            return result;
+        }
+
+        // Companies (legal entities)
         public async Task<PobierzPelnyRaport> PobierzPelnyRaportPrawna(string regonNumber)
         {
             var regon = await PrepareClient();
@@ -127,7 +147,7 @@ namespace REGON.Client
             return result;
         }
 
-        // Społki - kody PKD
+        // Companies (legal entities) - PKD codes
         public async Task<PobierzPKDPrawna> PobierzPKDPrawna(string regonNumber)
         {
             var regon = await PrepareClient();
@@ -142,7 +162,7 @@ namespace REGON.Client
             return result;
         }
 
-        // Jednosobowe działalności
+        // Sole proprietorships (CEIDG)
         public async Task<PobierzPelnyRaportCeidg> PobierzPelnyRaportCeidg(string regonNumber)
         {
             var regon = await PrepareClient();
@@ -157,7 +177,7 @@ namespace REGON.Client
             return result;
         }
 
-        // Jednosobowe działalności - kody PKD
+        // Sole proprietorships - PKD codes
         public async Task<PobierzPKDFizyczna> PobierzPkdFizyczna(string regonNumber)
         {
             var regon = await PrepareClient();

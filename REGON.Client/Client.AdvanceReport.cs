@@ -31,6 +31,7 @@ public partial class Client
 
         return new AdvanceReportData
         {
+            Krs = "",
             StartDate = ClientHelpers.GetDate(fullReport.Dane.FizDataPowstania),
             EndDate = ClientHelpers.GetDate(fullReport.Dane.FizDataZakonczeniaDzialalnosci),
             IsSuspended = ClientHelpers.IsHappened(fullReport.Dane.FizDataZawieszeniaDzialalnosci),
@@ -46,6 +47,7 @@ public partial class Client
 
         return new AdvanceReportData
         {
+            Krs = ClientHelpers.ValueOrNull(fullReport.Dane.PrawNumerWRejestrzeEwidencji),
             StartDate = ClientHelpers.GetDate(fullReport.Dane.PrawDataPowstania),
             EndDate = ClientHelpers.GetDate(fullReport.Dane.PrawDataZakonczeniaDzialalnosci),
             IsSuspended = ClientHelpers.IsHappened(fullReport.Dane.PrawDataZawieszeniaDzialalnosci),

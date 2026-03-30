@@ -1,12 +1,12 @@
 # REGON
 
-A .NET client library for the Polish REGON (GUS BIR1) SOAP API — query company data from the National Business Registry by NIP or KRS number.
+A .NET client library for the Polish REGON (GUS BIR1) SOAP API — query company data from the National Business Registry by NIP, KRS, or REGON number.
 
 ![GitHub](https://img.shields.io/github/license/jarmatys/REGON) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jarmatys/REGON/release-package.yml?label=release) ![Nuget](https://img.shields.io/nuget/v/REGON?label=version) ![Nuget](https://img.shields.io/nuget/dt/REGON) ![GitHub issues](https://img.shields.io/github/issues/jarmatys/REGON) ![GitHub pull requests](https://img.shields.io/github/issues-pr/jarmatys/REGON)
 
 ## Features
 
-- Look up companies by **NIP** (tax identification number) or **KRS** (National Court Register number)
+- Look up companies by **NIP** (tax identification number), **KRS** (National Court Register number), or **REGON** (statistical number)
 - Built-in **dependency injection** support via `IServiceCollection`
 - Strongly-typed response model with address, legal form, activity codes (PKD), and more
 - Automatic detection of **legal form** (sole proprietorship, LLC, joint-stock company, etc.)
@@ -59,8 +59,9 @@ public class CompanyService
 |---|---|
 | `GetCompanyDataByNip(string nip)` | Fetch company data by NIP (tax ID) |
 | `GetCompanyDataByKrs(string krs)` | Fetch company data by KRS (court register number) |
+| `GetCompanyDataByRegon(string regon)` | Fetch company data by REGON (statistical number) |
 
-Both methods return `Task<Company>`.
+All methods return `Task<Company>`.
 
 ### `Company` Response Model
 

@@ -23,7 +23,7 @@ public static class ClientHelpers
     {
         if (string.IsNullOrEmpty(input))
         {
-            throw new Exception("[REGON] NIP/KRS is required parameter!");
+            throw new Exception("[REGON] NIP/KRS/REGON is required parameter!");
         }
     }
 

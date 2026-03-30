@@ -29,6 +29,15 @@ namespace REGON.Client
             return await CreateRegonResponse(basicData.Dane);
         }
 
+        public async Task<RegonResponse> GetFullCompanyDataByRegon(string regon)
+        {
+            ClientHelpers.ValidateInput(regon);
+
+            var basicData = await _httpClient.SzukajPodmiotuByRegon(regon);
+
+            return await CreateRegonResponse(basicData.Dane);
+        }
+
         private async Task<RegonResponse> CreateRegonResponse(DaneSzukajPodmioty basicData)
         {
             if (basicData.Nazwa == null)
@@ -45,7 +54,7 @@ namespace REGON.Client
             return new RegonResponse
             {
                 NIP = basicData.Nip,
-                Krs = "",
+                Krs = advancedReportData?.Krs ?? "",
                 REGON = basicData.Regon,
                 LegalForm = legalForm.ToString(),
                 Name = basicData.Nazwa.Replace("\"", "'"),

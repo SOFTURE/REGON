@@ -25,7 +25,7 @@ namespace REGON.Client.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Problem z połączeniem do API REGON'u.", ex);
+                throw new Exception("Failed to connect to the REGON API.", ex);
             }
         }
         
@@ -41,7 +41,23 @@ namespace REGON.Client.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Problem z połączeniem do API REGON'u.", ex);
+                throw new Exception("Failed to connect to the REGON API.", ex);
+            }
+        }
+
+        public async Task<Company> GetCompanyDataByRegon(string regon)
+        {
+            try
+            {
+                var response = await _clientRegon.GetFullCompanyDataByRegon(regon);
+
+                return response != null
+                    ? CreateRegonResult(response)
+                    : new Company();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to connect to the REGON API.", ex);
             }
         }
 

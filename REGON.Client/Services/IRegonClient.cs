@@ -6,5 +6,6 @@ namespace REGON.Client.Services
     {
         Task<Company> GetCompanyDataByNip(string nip);
         Task<Company> GetCompanyDataByKrs(string krs);
+        Task<Company> GetCompanyDataByRegon(string regon);
     }
 }
