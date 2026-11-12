@@ -28,8 +28,26 @@ dotnet add package REGON
 
 ### 1. Register the client
 
+The client reads its key from the `Regon` section of your settings class, the same way as the other SOFTURE
+packages (`SOFTURE.Settings`):
+
 ```csharp
-services.AddRegonClient("<YOUR-API-KEY>");
+public sealed class AppSettings : IRegonSettings
+{
+    public RegonSettings Regon { get; init; }
+}
+```
+
+```json
+"Regon": {
+  "ApiKey": "<YOUR-API-KEY>"
+}
+```
+
+```csharp
+services
+    .ConfigureSettings<AppSettings>(configuration)
+    .AddRegonClient<AppSettings>();
 ```
 
 ### 2. Inject and use

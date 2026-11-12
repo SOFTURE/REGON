@@ -1,9 +1,14 @@
-### Changelog 
+### Changelog
 
-#### Wersja 1.7.0
-- [x] Refactoring kodu 
-- [x] Fix i stabilizacja w obrębie funkcji `IsActive`
-- [x] Dodanie testów jednostkowych
+#### Version 2.0.0
+- [x] `AddRegonClient<TSettings>()` reads the API key from the `Regon` section of a settings class (`IRegonSettings`,
+  `SOFTURE.Settings`), the same way as `AddFakturownia<TSettings>()`
+- [x] Breaking: `AddRegonClient(string apiKey)` is removed
 
-#### Wersja 1.1.0 - 1.6.0
-- [x] Wprowadzenie do nuget.org i ustabilizowanie paczki 
+#### Version 1.7.0
+- [x] Code refactoring
+- [x] Fix and stabilisation of `IsActive`
+- [x] Unit tests
+
+#### Version 1.1.0 - 1.6.0
+- [x] Published to nuget.org and stabilised the REGON package

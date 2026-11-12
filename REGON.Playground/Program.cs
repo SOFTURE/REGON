@@ -1,12 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using REGON.Client;
 using REGON.Client.Services;
+using REGON.Client.Settings;
 
 namespace REGON.Playground
 {
     public abstract class Program
     {
         private const string GusKey = "<GUS-API-KEY>";
+
+        private sealed class PlaygroundSettings : IRegonSettings
+        {
+            public RegonSettings Regon { get; init; } = new() { ApiKey = GusKey };
+        }
         
         private static async Task Main(string[] args)
         {
@@ -39,7 +45,8 @@ namespace REGON.Playground
         {
             var serviceCollection = new ServiceCollection();
 
-            serviceCollection.AddRegonClient(GusKey);
+            serviceCollection.AddSingleton(new PlaygroundSettings());
+            serviceCollection.AddRegonClient<PlaygroundSettings>();
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
