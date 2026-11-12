@@ -91,7 +91,9 @@ jobs:
         run: dotnet restore ./REGON.sln
 
       - name: 🏗️ Build
-        run: dotnet build ./REGON.sln --no-restore -c Release
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: dotnet build ./REGON.sln --no-restore -c Release "/p:Version=${VERSION:-0.0.0-dryrun}"
 
       - name: 🧪 Run the unit tests
         run: dotnet test ./REGON.sln --no-build -c Release
@@ -120,9 +122,13 @@ jobs:
           dotnet pack "$PROJECT" --no-build -c Release -o ./artifacts "/p:PackageVersion=$version" "/p:Version=$version"
 
       - name: ✅ Check the package
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
         run: |
           set -euo pipefail
           shopt -s nullglob
+          version="${VERSION:-0.0.0-dryrun}"
+          expected="${version%%-*}.0"
           packages=(./artifacts/*.nupkg)
           [ ${#packages[@]} -gt 0 ] || { echo "::error::No package was produced."; exit 1; }
           for nupkg in "${packages[@]}"; do
@@ -132,7 +138,15 @@ jobs:
               grep -q "^lib/${tfm}/" <<<"$listing" \
                 || { echo "::error::$(basename "$nupkg") has no lib/${tfm}/ build."; exit 1; }
             done
-            echo "$(basename "$nupkg"): lib/net6.0, lib/net10.0"
+            extracted=$(mktemp -d)
+            unzip -q "$nupkg" 'lib/*.dll' -d "$extracted"
+            for dll in "$extracted"/lib/*/*.dll; do
+              actual=$(pwsh -NoProfile -Command "[System.Reflection.AssemblyName]::GetAssemblyName('$dll').Version.ToString()")
+              [ "$actual" = "$expected" ] \
+                || { echo "::error::$(basename "$nupkg"): ${dll#"$extracted"/} has assembly version $actual, expected $expected."; exit 1; }
+            done
+            rm -rf "$extracted"
+            echo "$(basename "$nupkg"): lib/net6.0, lib/net10.0, assembly version $expected"
           done
 
       - name: 📤 Upload the package

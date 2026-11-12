@@ -1,5 +1,9 @@
 ### Changelog
 
+#### Version 2.0.1
+- [x] The assembly version matches the package version (2.0.0 shipped as assembly 1.0.0.0)
+- [x] `SOFTURE.Settings` 2.0.0
+
 #### Version 2.0.0
 - [x] `AddRegonClient<TSettings>()` reads the API key from the `Regon` section of a settings class (`IRegonSettings`,
   `SOFTURE.Settings`), the same way as `AddFakturownia<TSettings>()`
