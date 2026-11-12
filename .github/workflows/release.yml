@@ -1,0 +1,248 @@
+name: release
+
+on:
+  push:
+    tags: ["regon@*.*.*"]
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "**/*.csproj"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PACKAGE_ID: REGON
+  PROJECT: ./REGON.Client/REGON.Client.csproj
+
+jobs:
+  validate:
+    name: 🔍 validate and pack
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      publish: ${{ steps.plan.outputs.publish }}
+      prerelease: ${{ steps.plan.outputs.prerelease }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 🧭 Plan the release
+        id: plan
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          semver='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$'
+          publish=false
+          version=""
+          tag=""
+
+          if [ "$REF_TYPE" = "tag" ]; then
+            package="${REF_NAME%%@*}"
+            version="${REF_NAME#*@}"
+            [ "$package" = "regon" ] \
+              || { echo "::error::Unknown package '$package'. This repository releases only 'regon'."; exit 1; }
+            [[ "$version" =~ $semver ]] \
+              || { echo "::error::'$version' is not a version (expected x.y.z or x.y.z-suffix)."; exit 1; }
+            publish=true
+            tag="$REF_NAME"
+          fi
+
+          prerelease=false
+          if [[ "$version" == *-* ]]; then prerelease=true; fi
+
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "publish=$publish"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$publish" = true ]; then
+            echo "🚀 Release: \`$PACKAGE_ID $version\` (tag \`$tag\`)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "🧪 Dry run: $PACKAGE_ID, nothing published" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 🌿 Commit is on master
+        if: steps.plan.outputs.publish == 'true'
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/master \
+            || { echo "::error::The commit $GITHUB_SHA is not on master."; exit 1; }
+
+      - name: ⚙️ Install dotnet
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            6.0.x
+            10.0.x
+
+      - name: 🔗 Restore dependencies
+        run: dotnet restore ./REGON.sln
+
+      - name: 🏗️ Build
+        run: dotnet build ./REGON.sln --no-restore -c Release
+
+      - name: 🧪 Run the unit tests
+        run: dotnet test ./REGON.sln --no-build -c Release
+
+      - name: 🛡️ Vulnerability gate
+        run: |
+          set -euo pipefail
+          net10=$(dotnet list "$PROJECT" package --vulnerable --include-transitive --no-restore --framework net10.0 2>&1)
+          echo "$net10"
+          if grep -q "^ *>" <<<"$net10"; then
+            echo "::error::Vulnerable packages on net10.0, see the report above."
+            exit 1
+          fi
+          older=$(dotnet list "$PROJECT" package --vulnerable --include-transitive --no-restore 2>&1)
+          if grep -q "^ *>" <<<"$older"; then
+            echo "$older"
+            echo "::warning::net10.0 is clean, but net6.0 carries known vulnerabilities (report above)."
+          fi
+
+      - name: 📦 Pack
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          version="${VERSION:-0.0.0-dryrun}"
+          dotnet pack "$PROJECT" --no-build -c Release -o ./artifacts "/p:PackageVersion=$version" "/p:Version=$version"
+
+      - name: ✅ Check the package
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          packages=(./artifacts/*.nupkg)
+          [ ${#packages[@]} -gt 0 ] || { echo "::error::No package was produced."; exit 1; }
+          for nupkg in "${packages[@]}"; do
+            [[ "$nupkg" == *.symbols.nupkg ]] && continue
+            listing=$(unzip -Z1 "$nupkg")
+            for tfm in net6.0 net10.0; do
+              grep -q "^lib/${tfm}/" <<<"$listing" \
+                || { echo "::error::$(basename "$nupkg") has no lib/${tfm}/ build."; exit 1; }
+            done
+            echo "$(basename "$nupkg"): lib/net6.0, lib/net10.0"
+          done
+
+      - name: 📤 Upload the package
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: ./artifacts/*.nupkg
+          if-no-files-found: error
+
+  integration:
+    name: 🧪 integration (GUS BIR test environment)
+    runs-on: ubuntu-latest
+    env:
+      REGON_INTEGRATION: "1"
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+
+      - name: ⚙️ Install dotnet
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            6.0.x
+            10.0.x
+
+      - name: 🔗 Restore dependencies
+        run: dotnet restore ./REGON.sln
+
+      - name: 🏗️ Build
+        run: dotnet build ./REGON.sln --no-restore -c Release
+
+      - name: 🧪 Run the tests against GUS BIR
+        run: dotnet test ./REGON.Tests --no-build -c Release
+
+  publish:
+    name: 🚀 publish to nuget.org
+    needs: [validate, integration]
+    if: needs.validate.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: 📥 Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: ./artifacts
+
+      - name: ⚙️ Install dotnet
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 🔐 NuGet login (OIDC)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: 🚀 Push to nuget.org
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          dotnet nuget push "./artifacts/${PACKAGE_ID}.${VERSION}.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+          echo "::notice::${PACKAGE_ID} ${VERSION} is pushed to nuget.org (indexing takes a few minutes)."
+
+  github-release:
+    name: 📝 create the GitHub Release
+    needs: [validate, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 📥 Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: ./artifacts
+
+      - name: 📝 Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.validate.outputs.tag }}
+          VERSION: ${{ needs.validate.outputs.version }}
+          PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force origin
+          nupkg="./artifacts/${PACKAGE_ID}.${VERSION}.nupkg"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$nupkg" --clobber
+            exit 0
+          fi
+          notes=$(printf '%s\n' \
+            "NuGet: \`dotnet add package ${PACKAGE_ID} --version ${VERSION}\`" \
+            "" \
+            "https://www.nuget.org/packages/${PACKAGE_ID}/${VERSION}")
+          args=(--verify-tag --generate-notes --title "$TAG" --notes "$notes")
+          previous=$(git -c versionsort.suffix=- tag --merged "$TAG" --list "regon@*" --sort=-v:refname | grep -vxF "$TAG" | head -n 1 || true)
+          if [ -n "$previous" ]; then args+=(--notes-start-tag "$previous"); fi
+          if [ "$PRERELEASE" = true ]; then args+=(--prerelease); fi
+          gh release create "$TAG" "$nupkg" "${args[@]}"

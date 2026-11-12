@@ -11,10 +11,16 @@ namespace REGON.Client
     public class HttpClient
     {
         private readonly string _apiKey;
-        
-        public HttpClient(string apiKey)
+        private readonly string _endpointAddress;
+
+        public HttpClient(string apiKey) : this(apiKey, null)
+        {
+        }
+
+        internal HttpClient(string apiKey, string endpointAddress)
         {
             _apiKey = apiKey;
+            _endpointAddress = endpointAddress;
         }
 
         private async Task<ClientModel> PrepareClient()
@@ -36,18 +42,18 @@ namespace REGON.Client
 
             var customBinding = new CustomBinding(encoding, transport);
 
-            var regonApiClient = new UslugaBIRzewnPublClient();
+            var regonApiClient = _endpointAddress == null
+                ? new UslugaBIRzewnPublClient()
+                : new UslugaBIRzewnPublClient(UslugaBIRzewnPublClient.EndpointConfiguration.e3, _endpointAddress);
 
             regonApiClient.Endpoint.Binding = customBinding;
 
+            var sidHeader = new SidHeaderBehavior();
+            regonApiClient.Endpoint.EndpointBehaviors.Add(sidHeader);
+
             var sid = await regonApiClient.ZalogujAsync(_apiKey);
 
-            new OperationContextScope(regonApiClient.InnerChannel);
-
-            var requestProperties = new HttpRequestMessageProperty();
-
-            requestProperties.Headers.Add("sid", sid.ZalogujResult);
-            OperationContext.Current.OutgoingMessageProperties[HttpRequestMessageProperty.Name] = requestProperties;
+            sidHeader.Sid = sid.ZalogujResult;
 
             return new ClientModel
             {

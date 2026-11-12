@@ -6,9 +6,17 @@ namespace REGON.Client
     {
         private readonly HttpClient _httpClient;
 
-        public Client(string apiKey)
+        public Client(string apiKey) : this(new HttpClient(apiKey))
         {
-            _httpClient = new HttpClient(apiKey);
+        }
+
+        internal Client(string apiKey, string endpointAddress) : this(new HttpClient(apiKey, endpointAddress))
+        {
+        }
+
+        private Client(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
         }
 
         public async Task<RegonResponse> GetFullCompanyDataByNip(string nip)

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFrameworks>net6.0;net10.0</TargetFrameworks>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -17,7 +17,7 @@
         <IncludeSymbols>true</IncludeSymbols>
         <PackageId>$(AssemblyName)</PackageId>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageProjectUrl>https://github.com/jarmatys/REGON</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/SOFTURE/REGON</PackageProjectUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageReleaseNotes>See $(PackageProjectUrl)/blob/master/CHANGELOG.md for release notes.</PackageReleaseNotes>
         <PackageTags>REGON;Client;GUS;.NET;CSharp;C#</PackageTags>
@@ -27,17 +27,29 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="REGON.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Include="..\README.md" Pack="true" PackagePath="\" />
         <None Include="..\LICENSE" Pack="true" PackagePath="\" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' != 'net10.0' ">
         <PackageReference Include="ExtendedXmlSerializer" Version="3.7.5" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
         <PackageReference Include="System.ServiceModel.Duplex" Version="4.7.0" />
         <PackageReference Include="System.ServiceModel.Http" Version="4.8.1" />
         <PackageReference Include="System.ServiceModel.NetTcp" Version="4.7.0" />
         <PackageReference Include="System.ServiceModel.Security" Version="4.7.0" />
+        <PackageReference Include="WcfCoreMtomEncoder" Version="0.1.16" />
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net10.0' ">
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+        <PackageReference Include="System.ServiceModel.Http" Version="10.1.0" />
+        <PackageReference Include="System.ServiceModel.Primitives" Version="10.1.0" />
         <PackageReference Include="WcfCoreMtomEncoder" Version="0.1.16" />
     </ItemGroup>
     

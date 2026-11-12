@@ -2,7 +2,7 @@
 
 A .NET client library for the Polish REGON (GUS BIR1) SOAP API — query company data from the National Business Registry by NIP, KRS, or REGON number.
 
-![GitHub](https://img.shields.io/github/license/jarmatys/REGON) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jarmatys/REGON/release-package.yml?label=release) ![Nuget](https://img.shields.io/nuget/v/REGON?label=version) ![Nuget](https://img.shields.io/nuget/dt/REGON) ![GitHub issues](https://img.shields.io/github/issues/jarmatys/REGON) ![GitHub pull requests](https://img.shields.io/github/issues-pr/jarmatys/REGON)
+![GitHub](https://img.shields.io/github/license/SOFTURE/REGON) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/SOFTURE/REGON/release.yml?label=release) ![Nuget](https://img.shields.io/nuget/v/REGON?label=version) ![Nuget](https://img.shields.io/nuget/dt/REGON) ![GitHub issues](https://img.shields.io/github/issues/SOFTURE/REGON) ![GitHub pull requests](https://img.shields.io/github/issues-pr/SOFTURE/REGON)
 
 ## Features
 
@@ -15,7 +15,7 @@ A .NET client library for the Polish REGON (GUS BIR1) SOAP API — query company
 
 ## Prerequisites
 
-- .NET 6.0 or later
+- .NET 6.0 or later (the package ships `net6.0` and `net10.0` builds)
 - A GUS API key — register at [api.stat.gov.pl/Home/RegonApi](https://api.stat.gov.pl/Home/RegonApi) to obtain one
 
 ## Installation
@@ -146,6 +146,30 @@ All methods return `Task<Company>`.
 ```bash
 dotnet test
 ```
+
+The integration tests call the public GUS BIR **test** environment (`wyszukiwarkaregontest.stat.gov.pl`, test key
+`abcde12345abcde12345`) and are skipped unless you opt in:
+
+```bash
+REGON_INTEGRATION=1 dotnet test
+```
+
+## Releasing
+
+The single workflow [`release.yml`](.github/workflows/release.yml) releases the package to nuget.org and creates a
+GitHub Release with the `.nupkg` attached.
+
+A release starts from a tag `regon@<version>` (e.g. `regon@1.9.0`) created by hand; the workflow never creates
+tags. In GitHub: Releases → **Draft a new release** → **Choose a tag** → type `regon@1.9.0` → **Create new tag on
+publish**, target `master` → **Publish release**. Pushing the tag from a terminal works the same way.
+
+Before publishing, the workflow checks that the commit is on `master`, builds for `net6.0` and `net10.0`, runs the
+unit tests and the integration tests against the GUS BIR test environment, blocks on known vulnerabilities on
+`net10.0` (`net6.0` only warns) and checks the package contents. **Run workflow** on a branch is a dry run.
+
+Publishing goes through [nuget.org trusted publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing):
+the policy (Package Owner `SOFTURE`, Repository `SOFTURE/REGON`, Workflow File `release.yml`) and the organization
+secret `NUGET_USER` (the nuget.org profile name of the policy owner). Keep the workflow file name.
 
 ## Contributing
 

@@ -8,9 +8,17 @@ namespace REGON.Client.Services
     {
         private readonly Client _clientRegon;
 
-        public RegonClient(string apiKey)
+        public RegonClient(string apiKey) : this(new Client(apiKey))
         {
-            _clientRegon = new Client(apiKey);
+        }
+
+        internal RegonClient(string apiKey, string endpointAddress) : this(new Client(apiKey, endpointAddress))
+        {
+        }
+
+        private RegonClient(Client client)
+        {
+            _clientRegon = client;
         }
 
         public async Task<Company> GetCompanyDataByNip(string nip)
